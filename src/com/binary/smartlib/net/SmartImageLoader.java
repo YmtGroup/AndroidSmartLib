@@ -1,5 +1,6 @@
 package com.binary.smartlib.net;
 
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -12,6 +13,7 @@ import com.binary.smartlib.log.SmartLog;
 /**
  * Created by yaoguoju on 15-12-28.
  */
+@SuppressLint("NewApi")
 public class SmartImageLoader {
     private static final String TAG = "SmartImageLoader";
     private LruCache<String,Bitmap> mCache;
@@ -20,7 +22,7 @@ public class SmartImageLoader {
     private boolean cacheEnable = false;
     private Context context;
 
-    public SmartImageLoader(Context context,boolean cacheEnable,float rate) {
+    private SmartImageLoader(Context context,boolean cacheEnable,float rate) {
         this.context = context;
         ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         if(am != null) {

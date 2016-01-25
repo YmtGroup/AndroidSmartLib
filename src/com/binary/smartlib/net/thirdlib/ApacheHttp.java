@@ -1,6 +1,8 @@
 package com.binary.smartlib.net.thirdlib;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.StringReader;
 import java.util.List;
 
 
@@ -9,8 +11,13 @@ import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.methods.PutMethod;
+import org.apache.commons.httpclient.methods.RequestEntity;
+import org.apache.commons.httpclient.methods.StringRequestEntity;
+
 
 
 /**
@@ -38,7 +45,7 @@ public class ApacheHttp {
 	 * @param params
 	 * @param callback4
 	 */
-	public void get(final String url,final ApacheHttpHeaders headers,final ApacheHttpUrlParams params,final Callback callback) {
+	public static void get(final String url,final ApacheHttpHeaders headers,final ApacheHttpUrlParams params,final Callback callback) {
 		new Thread(new Runnable() {
 			public void run() {
 				if(callback != null) {
@@ -51,7 +58,7 @@ public class ApacheHttp {
 				}
 				
 				HttpClient client = new HttpClient() ;
-			    HttpMethod getMethod = new GetMethod(getUrl);
+				GetMethod getMethod = new GetMethod(getUrl);
 			    
 			    if(headers != null) {
 				    List<Header> hs = headers.getHeaders();
@@ -68,26 +75,42 @@ public class ApacheHttp {
 						if(callback != null) {
 							callback.onSuccess(getMethod.getResponseBody(), responseCode);
 						}
+					}else {
+						if(callback != null) {
+							callback.onError(responseCode);
+						}
 					}
 				} catch (HttpException e) {
 					// TODO Auto-generated catch block
+					if(callback != null) {
+						callback.onError(responseCode);
+					}
 					e.printStackTrace();
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}finally{
-					if(callback == null) {
+					if(callback != null) {
 						callback.onError(responseCode);
 					}
+					e.printStackTrace();
+				}finally{
+					
+					getMethod.releaseConnection();
 				}
 			    
 			}
 		}).start();	
 	}
 	
-	public void post(final String url,final ApacheHttpHeaders headers,final ApacheHttpUrlParams params,final Callback callback) {
+	/**
+	 * Http Post请求
+	 * @param url
+	 * @param body
+	 * @param headers
+	 * @param params
+	 * @param callback
+	 */
+	public static void post(final String url,final byte[] body,final ApacheHttpHeaders headers,final ApacheHttpUrlParams params,final Callback callback) {
 		new Thread(new Runnable() {
-			
 			@Override
 			public void run() {
 				// TODO Auto-generated method stub
@@ -101,7 +124,7 @@ public class ApacheHttp {
 				}
 				
 				HttpClient client = new HttpClient() ;
-			    HttpMethod postMethod = new PostMethod(postUrl);
+			    PostMethod postMethod = new PostMethod(postUrl);
 			    
 			    if(headers != null) {
 				    List<Header> hs = headers.getHeaders();
@@ -110,12 +133,113 @@ public class ApacheHttp {
 				    		postMethod.setRequestHeader(h);
 				    	}
 				    }
-			    }	
-			    
+			    }
+			    if(body != null) {
+			    	ByteArrayRequestEntity entity = new ByteArrayRequestEntity(body); 
+			    	postMethod.setRequestEntity(entity);
+			    }
+			    try {
+					responseCode = client.executeMethod(postMethod);
+					if(responseCode == HttpStatus.SC_OK) {
+						if(callback != null) {
+							callback.onSuccess(postMethod.getResponseBody(), responseCode);
+						}
+					}else {
+						if(callback != null) {
+							callback.onError(responseCode);
+						}
+					}
+				} catch (HttpException e) {
+					// TODO Auto-generated catch block
+					if(callback != null) {
+						callback.onError(responseCode);
+					}
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					if(callback != null) {
+						callback.onError(responseCode);
+					}
+					e.printStackTrace();
+				}finally {
+					
+					postMethod.releaseConnection();
+				} 
 			}
 		}).start();
 		
 	    
+	}
+	
+	
+	/**
+	 * Http Put请求
+	 * @param url
+	 * @param body
+	 * @param headers
+	 * @param params
+	 * @param callback
+	 */
+	public static void put(final String url,final byte[] body,final ApacheHttpHeaders headers,final ApacheHttpUrlParams params,final Callback callback) {
+		new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				if(callback != null) {
+					callback.onStart();
+				}
+				String putUrl = url;
+				int responseCode = HttpStatus.SC_GONE;
+				if(params != null) {
+					putUrl = params.assembleUrl(url);
+				}
+				
+				HttpClient client = new HttpClient() ;
+			    PutMethod putMethod = new PutMethod(putUrl);
+			    
+			    if(headers != null) {
+				    List<Header> hs = headers.getHeaders();
+				    if(hs != null) {
+				    	for(Header h : hs) {
+				    		putMethod.setRequestHeader(h);
+				    	}
+				    }
+			    }
+			    
+			    if(body != null) {
+			        ByteArrayRequestEntity entity = new ByteArrayRequestEntity(body); 
+			        putMethod.setRequestEntity(entity);
+			    }
+			    try {
+					responseCode = client.executeMethod(putMethod);
+					if(responseCode == HttpStatus.SC_OK) {
+						if(callback != null) {
+							callback.onSuccess(putMethod.getResponseBody(), responseCode);
+						}
+					}else {
+						if(callback != null) {
+							callback.onError(responseCode);
+						}
+					}
+					
+				} catch (HttpException e) {
+					// TODO Auto-generated catch block
+					if(callback != null) {
+						callback.onError(responseCode);
+					}
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					if(callback != null) {
+						callback.onError(responseCode);
+					}
+					e.printStackTrace();
+				}finally {		
+					putMethod.releaseConnection();
+				} 
+			}
+		}).start(); 
 	}
 	
 }
