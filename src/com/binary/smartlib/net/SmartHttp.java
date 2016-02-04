@@ -116,7 +116,7 @@ public class SmartHttp {
      * @param headers
      * @param callback
      */
-    public static void post(final String url, final Map<String,String> postParams, final Map<String,String> headers
+    public static void post(final String url,final byte[] body, final Map<String,String> postParams, final Map<String,String> headers
                                     , final RequestCallback callback) {
             new AsyncTask<String, Integer, byte[]>() {
                 private int responseCode = -1;
@@ -132,18 +132,18 @@ public class SmartHttp {
                 @Override
                 protected byte[] doInBackground(String... params) {
                     Set<Map.Entry<String,String>> entrys = null;
-                    StringBuffer buffer = new StringBuffer();
+                    StringBuffer urlbuff = new StringBuffer(url);
                     try {
                         if(postParams != null && !postParams.isEmpty()) {
                             entrys = postParams.entrySet();
                             for (Map.Entry<String, String> entry : entrys) {
-                                buffer.append(entry.getKey()).append("=")
+                            	urlbuff.append(entry.getKey()).append("=")
                                         .append(URLEncoder.encode(entry.getValue(), "UTF-8"))
                                         .append("&");
                             }
-                            buffer.deleteCharAt(buffer.length() - 1);
+                            urlbuff.deleteCharAt(urlbuff.length() - 1);
                         }
-                        URL postUrl = new URL(url);
+                        URL postUrl = new URL(urlbuff.toString());
                         SmartLog.d(TAG,"post url "+postUrl.toString());
                         conn = (HttpURLConnection) postUrl.openConnection();
                         conn.setRequestMethod("POST");
@@ -158,7 +158,7 @@ public class SmartHttp {
                         }
 
                         outputStream = conn.getOutputStream();
-                        outputStream.write(buffer.toString().getBytes("UTF-8"));
+                        outputStream.write(body);
                         responseCode = conn.getResponseCode();
                         if(responseCode == HTTP_CODE_200) {
                             byte[] data = SmartStream.readInputStream(conn.getInputStream());

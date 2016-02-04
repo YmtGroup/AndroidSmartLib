@@ -1,22 +1,23 @@
 package com.binary.smartlib.net.thirdlib;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.StringReader;
+
 import java.util.List;
 
 
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
-import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.PutMethod;
-import org.apache.commons.httpclient.methods.RequestEntity;
-import org.apache.commons.httpclient.methods.StringRequestEntity;
+
+import org.apache.commons.httpclient.methods.multipart.MultipartRequestEntity;
+import org.apache.commons.httpclient.methods.multipart.Part;
+
+import com.binary.smartlib.log.SmartLog;
 
 
 
@@ -26,6 +27,8 @@ import org.apache.commons.httpclient.methods.StringRequestEntity;
  *
  */
 public class ApacheHttp {
+	
+	private final static String TAG = "ApacheHttp";
 	
 	/**
 	 * http回调
@@ -51,29 +54,29 @@ public class ApacheHttp {
 				if(callback != null) {
 					callback.onStart();
 				}
-				String getUrl = url;
+				String assembleUrl = url;
 				int responseCode = HttpStatus.SC_GONE;
 				if(params != null) {
-					getUrl = params.assembleUrl(url);
+					assembleUrl = params.assembleUrl(url);
 				}
 				
 				HttpClient client = new HttpClient() ;
-				GetMethod getMethod = new GetMethod(getUrl);
+				GetMethod method = new GetMethod(assembleUrl);
 			    
 			    if(headers != null) {
 				    List<Header> hs = headers.getHeaders();
 				    if(hs != null) {
 				    	for(Header h : hs) {
-				    		getMethod.setRequestHeader(h);
+				    		method.setRequestHeader(h);
 				    	}
 				    }
 			    }
 			    
 			    try {
-			    	responseCode = client.executeMethod(getMethod);
+			    	responseCode = client.executeMethod(method);
 					if(responseCode == HttpStatus.SC_OK) {
 						if(callback != null) {
-							callback.onSuccess(getMethod.getResponseBody(), responseCode);
+							callback.onSuccess(method.getResponseBody(), responseCode);
 						}
 					}else {
 						if(callback != null) {
@@ -94,7 +97,7 @@ public class ApacheHttp {
 					e.printStackTrace();
 				}finally{
 					
-					getMethod.releaseConnection();
+					method.releaseConnection();
 				}
 			    
 			}
@@ -117,32 +120,32 @@ public class ApacheHttp {
 				if(callback != null) {
 					callback.onStart();
 				}
-				String postUrl = url;
+				String assembleUrl = url;
 				int responseCode = HttpStatus.SC_GONE;
 				if(params != null) {
-					postUrl = params.assembleUrl(url);
+					assembleUrl = params.assembleUrl(url);
 				}
 				
 				HttpClient client = new HttpClient() ;
-			    PostMethod postMethod = new PostMethod(postUrl);
-			    
+			    PostMethod method = new PostMethod(assembleUrl);
+			    method.getParams().setContentCharset("utf-8");
 			    if(headers != null) {
 				    List<Header> hs = headers.getHeaders();
 				    if(hs != null) {
 				    	for(Header h : hs) {
-				    		postMethod.setRequestHeader(h);
+				    		method.setRequestHeader(h);
 				    	}
 				    }
 			    }
 			    if(body != null) {
 			    	ByteArrayRequestEntity entity = new ByteArrayRequestEntity(body); 
-			    	postMethod.setRequestEntity(entity);
+			    	method.setRequestEntity(entity);
 			    }
 			    try {
-					responseCode = client.executeMethod(postMethod);
+					responseCode = client.executeMethod(method);
 					if(responseCode == HttpStatus.SC_OK) {
 						if(callback != null) {
-							callback.onSuccess(postMethod.getResponseBody(), responseCode);
+							callback.onSuccess(method.getResponseBody(), responseCode);
 						}
 					}else {
 						if(callback != null) {
@@ -163,7 +166,7 @@ public class ApacheHttp {
 					e.printStackTrace();
 				}finally {
 					
-					postMethod.releaseConnection();
+					method.releaseConnection();
 				} 
 			}
 		}).start();
@@ -196,26 +199,27 @@ public class ApacheHttp {
 				}
 				
 				HttpClient client = new HttpClient() ;
-			    PutMethod putMethod = new PutMethod(putUrl);
-			    
+			    PutMethod method = new PutMethod(putUrl);
+			    method.getParams().setContentCharset("utf-8");
+
 			    if(headers != null) {
 				    List<Header> hs = headers.getHeaders();
 				    if(hs != null) {
 				    	for(Header h : hs) {
-				    		putMethod.setRequestHeader(h);
+				    		method.setRequestHeader(h);
 				    	}
 				    }
 			    }
 			    
 			    if(body != null) {
 			        ByteArrayRequestEntity entity = new ByteArrayRequestEntity(body); 
-			        putMethod.setRequestEntity(entity);
+			        method.setRequestEntity(entity);
 			    }
 			    try {
-					responseCode = client.executeMethod(putMethod);
+					responseCode = client.executeMethod(method);
 					if(responseCode == HttpStatus.SC_OK) {
 						if(callback != null) {
-							callback.onSuccess(putMethod.getResponseBody(), responseCode);
+							callback.onSuccess(method.getResponseBody(), responseCode);
 						}
 					}else {
 						if(callback != null) {
@@ -236,10 +240,160 @@ public class ApacheHttp {
 					}
 					e.printStackTrace();
 				}finally {		
-					putMethod.releaseConnection();
+					method.releaseConnection();
 				} 
 			}
 		}).start(); 
 	}
 	
+	/**
+	 * Put multi内容
+	 * @param url
+	 * @param parts
+	 * @param headers
+	 * @param params
+	 * @param callback
+	 */
+	public static void putMultiBody(final String url,final ApacheHttpMultiBody body,
+			final ApacheHttpHeaders headers,final ApacheHttpUrlParams params,final Callback callback) {
+		new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				if(callback != null) {
+					callback.onStart();
+				}
+				String assembleUrl = url;
+				int responseCode = HttpStatus.SC_GONE;
+				if(params != null) {
+					assembleUrl = params.assembleUrl(url);
+				}
+				
+				HttpClient client = new HttpClient() ;
+			    PutMethod method = new PutMethod(assembleUrl);
+			    method.getParams().setContentCharset("utf-8");
+			    if(headers != null) {
+				    List<Header> hs = headers.getHeaders();
+				    if(hs != null) {
+				    	for(Header h : hs) {
+				    		method.setRequestHeader(h);
+				    	}
+				    }
+			    }
+			    
+			    if(body != null && body.getParts() != null && body.getParts().size() > 0) {
+			    	Part[] ps = new Part[body.getParts().size()];
+			    	body.getParts().toArray(ps);
+			    	MultipartRequestEntity entity = new MultipartRequestEntity(ps, method.getParams());
+			    	method.setRequestEntity(entity);
+			    }
+			    try {
+			    	
+					responseCode = client.executeMethod(method);
+					if(responseCode == HttpStatus.SC_OK) {
+						if(callback != null) {
+							callback.onSuccess(method.getResponseBody(), responseCode);
+						}
+					}else {
+						if(callback != null) {
+							callback.onError(responseCode);
+						}
+					}
+					
+				} catch (HttpException e) {
+					// TODO Auto-generated catch block
+					if(callback != null) {
+						callback.onError(responseCode);
+					}
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					if(callback != null) {
+						callback.onError(responseCode);
+					}
+					e.printStackTrace();
+				}finally {		
+					method.releaseConnection();
+				} 
+			}
+			
+		}).start();
+		
+	}
+	
+	/**
+	 * Post multi内容
+	 * @param url
+	 * @param parts
+	 * @param headers
+	 * @param params
+	 * @param callback
+	 */
+	public static void postMultiBody(final String url,final ApacheHttpMultiBody body,
+			final ApacheHttpHeaders headers,final ApacheHttpUrlParams params,final Callback callback) {
+		new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				if(callback != null) {
+					callback.onStart();
+				}
+				String assembleUrl = url;
+				int responseCode = HttpStatus.SC_GONE;
+				if(params != null) {
+					assembleUrl = params.assembleUrl(url);
+				}
+				
+				HttpClient client = new HttpClient() ;
+			    PostMethod method = new PostMethod(assembleUrl);
+			    method.getParams().setContentCharset("utf-8");
+			    if(headers != null) {
+				    List<Header> hs = headers.getHeaders();
+				    if(hs != null) {
+				    	for(Header h : hs) {
+				    		method.setRequestHeader(h);
+				    	}
+				    }
+			    }
+			    
+			    if(body != null && body.getParts() != null && body.getParts().size() > 0) {
+			    	Part[] ps = new Part[body.getParts().size()];
+			    	body.getParts().toArray(ps);
+			    	MultipartRequestEntity entity = new MultipartRequestEntity(ps, method.getParams());
+			    	method.setRequestEntity(entity);
+			    }
+			    try {
+					responseCode = client.executeMethod(method);
+					if(responseCode == HttpStatus.SC_OK) {
+						if(callback != null) {
+							callback.onSuccess(method.getResponseBody(), responseCode);
+						}
+					}else {
+						if(callback != null) {
+							callback.onError(responseCode);
+						}
+					}
+					
+				} catch (HttpException e) {
+					// TODO Auto-generated catch block
+					if(callback != null) {
+						callback.onError(responseCode);
+					}
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					if(callback != null) {
+						callback.onError(responseCode);
+					}
+					e.printStackTrace();
+				}finally {		
+					method.releaseConnection();
+				} 
+			}
+			
+		}).start();
+		
+	}
 }

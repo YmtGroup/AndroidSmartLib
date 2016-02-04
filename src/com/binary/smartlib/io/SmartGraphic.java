@@ -183,12 +183,7 @@ public class SmartGraphic {
     public static boolean newFileByBitmap(Bitmap bm, File file) {
         boolean ret = false;
         try {
-            if(file.exists()) {
-                SmartLog.d(TAG,"file existed");
-                return ret;
-            }else {
-                file.createNewFile();
-            }
+            SmartFile.create(file);
             Bitmap.CompressFormat format ;
             String fileName = file.getName();
             if(fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) {

@@ -10,9 +10,9 @@ public class SmartLog {
     public final static int debug   = 1;
     public final static int info    = 2;
     public final static int error   = 3;
+    
 
-
-    public final static int level   = version;
+    public static int level   = version;
 
     public static void i(String TAG,String msg) {
         if(info >= level) {
@@ -30,5 +30,9 @@ public class SmartLog {
         if(error >= level) {
             Log.e(TAG,msg);
         }
+    }
+    
+    public static void setLogLevel(int l) {
+    	level = l;
     }
 }
