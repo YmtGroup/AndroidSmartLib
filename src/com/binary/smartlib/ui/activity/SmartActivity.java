@@ -136,4 +136,18 @@ public abstract class SmartActivity extends Activity implements View.OnClickList
         }
     }
 
+    /**
+     * 获取EditText控件的输入
+     * @param edit
+     * @return
+     */
+    protected String getEditTextInput(int edit) {
+        EditText editText = (EditText) findViewById(edit);
+        if(editText != null) {
+            return editText.getText().toString();
+        }else {
+            return "";
+        }
+    }
+
 }
